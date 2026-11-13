@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gerador de Orçamentos e Ordens de Serviço</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Elementos com a classe "no-print" somem na impressão (veja style.css) -->
+  <header class="topo no-print">
+    <h1>Orçamentos e Ordens de Serviço</h1>
+    <p>Preencha os dados, confira a prévia e imprima ou salve em PDF pelo navegador.</p>
+  </header>
+
+  <main class="layout">
+
+    <!-- ================= COLUNA DO FORMULÁRIO ================= -->
+    <div class="coluna-formulario no-print">
+
+      <!-- Aviso exibido no modo consulta -->
+      <div id="aviso-consulta" class="aviso" hidden>
+        <p><strong id="aviso-consulta-texto"></strong></p>
+        <button type="button" id="btn-liberar-edicao" class="btn btn-secundario">Editar este documento</button>
+      </div>
+
+      <p id="aviso-edicao" class="aviso aviso-edicao" hidden></p>
+
+      <!-- Quando o fieldset está "disabled", todos os campos dentro dele ficam bloqueados -->
+      <fieldset id="campos" class="sem-borda">
+
+        <section class="cartao">
+          <h2>Documento</h2>
+          <div class="grade grade-3">
+            <label>Tipo
+              <select id="tipo-documento">
+                <option value="orcamento">Orçamento</option>
+                <option value="os">Ordem de Serviço</option>
+              </select>
+            </label>
+            <label>Status
+              <select id="status">
+                <option value="pendente">Pendente</option>
+                <option value="aprovado">Aprovado</option>
+                <option value="recusado">Recusado</option>
+              </select>
+            </label>
+            <label>Validade do orçamento (dias)
+              <input type="text" id="validade-dias" inputmode="numeric" maxlength="3" value="15">
+            </label>
+          </div>
+        </section>
+
+        <section class="cartao">
+          <h2>Sua empresa</h2>
+          <div class="grade grade-2">
+            <label>Nome da empresa ou do prestador *
+              <input type="text" id="empresa-nome" maxlength="80" autocomplete="organization">
+            </label>
+            <label>CPF ou CNPJ
+              <input type="text" id="empresa-documento" maxlength="30">
+            </label>
+            <label>Telefone
+              <input type="text" id="empresa-telefone" maxlength="30" autocomplete="tel">
+            </label>
+            <label>E-mail
+              <input type="text" id="empresa-email" maxlength="80" autocomplete="email">
+            </label>
+            <label class="largura-total">Endereço
+              <input type="text" id="empresa-endereco" maxlength="120">
+            </label>
+          </div>
+          <div class="acoes-linha">
+            <button type="button" id="btn-salvar-empresa" class="btn btn-secundario">Guardar como dados padrão</button>
+            <span id="msg-empresa" class="msg-inline" role="status"></span>
+          </div>
+        </section>
+
+        <section class="cartao">
+          <h2>Cliente</h2>
+          <div class="grade grade-2">
+            <label>Nome do cliente *
+              <input type="text" id="cliente-nome" maxlength="80">
+            </label>
+            <label>CPF ou CNPJ
+              <input type="text" id="cliente-documento" maxlength="30">
+            </label>
+            <label>Telefone
+              <input type="text" id="cliente-telefone" maxlength="30">
+            </label>
+            <label>E-mail
+              <input type="text" id="cliente-email" maxlength="80">
+            </label>
+            <label class="largura-total">Endereço
+              <input type="text" id="cliente-endereco" maxlength="120">
+            </label>
+          </div>
+        </section>
+
+        <section class="cartao">
+          <h2>Produtos e serviços</h2>
+
+          <form id="form-item" novalidate>
+            <div class="grade grade-item">
+              <label>Descrição
+                <input type="text" id="item-descricao" maxlength="120">
+              </label>
+              <label>Quantidade
+                <input type="text" id="item-quantidade" inputmode="numeric" value="1">
+              </label>
+              <label>Preço unitário (R$)
+                <input type="text" id="item-preco" inputmode="decimal" placeholder="0,00">
+              </label>
+            </div>
+            <div class="acoes-linha">
+              <button type="submit" id="btn-item" class="btn btn-primario">Adicionar item</button>
+              <button type="button" id="btn-cancelar-item" class="btn btn-secundario" hidden>Cancelar edição</button>
+            </div>
+            <ul id="erro-item" class="erros" role="alert" hidden></ul>
+          </form>
+
+          <div class="tabela-rolavel">
+            <table class="tabela-itens">
+              <thead>
+                <tr>
+                  <th>Descrição</th>
+                  <th class="num">Qtd.</th>
+                  <th class="num">Preço unit.</th>
+                  <th class="num">Subtotal</th>
+                  <th><span class="so-leitor">Ações</span></th>
+                </tr>
+              </thead>
+              <tbody id="tabela-itens-corpo"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="cartao">
+          <h2>Desconto e observações</h2>
+          <div class="grade grade-2">
+            <label>Tipo de desconto
+              <select id="desconto-tipo">
+                <option value="valor">Valor em reais (R$)</option>
+                <option value="percentual">Percentual (%)</option>
+              </select>
+            </label>
+            <label>Desconto
+              <input type="text" id="desconto-valor" inputmode="decimal" placeholder="0,00">
+            </label>
+          </div>
+          <p id="erro-desconto" class="erro-texto" role="alert" hidden></p>
+
+          <dl class="resumo">
+            <div><dt>Subtotal</dt><dd id="resumo-subtotal">R$ 0,00</dd></div>
+            <div><dt>Desconto</dt><dd id="resumo-desconto">R$ 0,00</dd></div>
+            <div class="resumo-total"><dt>Total</dt><dd id="resumo-total">R$ 0,00</dd></div>
+          </dl>
+
+          <label>Observações (prazo, forma de pagamento, garantia...)
+            <textarea id="observacoes" rows="3" maxlength="500"></textarea>
+          </label>
+        </section>
+
+      </fieldset>
+
+      <!-- Estes botões ficam FORA do fieldset para o botão Imprimir funcionar no modo consulta -->
+      <section class="cartao">
+        <div class="acoes-linha acoes-principais">
+          <button type="button" id="btn-salvar" class="btn btn-primario">Salvar orçamento</button>
+          <button type="button" id="btn-imprimir" class="btn btn-secundario">Imprimir / salvar em PDF</button>
+          <button type="button" id="btn-novo" class="btn btn-secundario">Novo documento</button>
+        </div>
+        <ul id="erro-salvar" class="erros" role="alert" hidden></ul>
+        <p id="msg-global" class="msg-sucesso" role="status" hidden></p>
+      </section>
+    </div>
+
+    <!-- ================= COLUNA DA PRÉVIA ================= -->
+    <aside class="coluna-previa">
+      <h2 class="no-print">Prévia do documento</h2>
+
+      <article class="documento" id="documento">
+        <header class="doc-cabecalho">
+          <div class="doc-empresa">
+            <h3 id="doc-empresa-nome">Nome da empresa</h3>
+            <p id="doc-empresa-documento"></p>
+            <p id="doc-empresa-endereco"></p>
+            <p id="doc-empresa-telefone"></p>
+            <p id="doc-empresa-email"></p>
+          </div>
+          <div class="doc-identificacao">
+            <p id="doc-tipo" class="doc-tipo">Orçamento</p>
+            <p id="doc-numero" class="doc-numero"></p>
+            <p id="doc-data"></p>
+            <p id="doc-validade"></p>
+            <span id="doc-status" class="selo selo-pendente">Pendente</span>
+          </div>
+        </header>
+
+        <section class="doc-cliente">
+          <h4>Cliente</h4>
+          <p id="doc-cliente-nome" class="doc-cliente-nome">Nome do cliente</p>
+          <p id="doc-cliente-documento"></p>
+          <p id="doc-cliente-endereco"></p>
+          <p id="doc-cliente-telefone"></p>
+          <p id="doc-cliente-email"></p>
+        </section>
+
+        <table class="doc-tabela">
+          <thead>
+            <tr>
+              <th>Descrição</th>
+              <th class="num">Qtd.</th>
+              <th class="num">Preço unit.</th>
+              <th class="num">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody id="doc-itens"></tbody>
+        </table>
+
+        <dl class="doc-totais">
+          <div><dt>Subtotal</dt><dd id="doc-subtotal">R$ 0,00</dd></div>
+          <div id="doc-linha-desconto"><dt id="doc-rotulo-desconto">Desconto</dt><dd id="doc-desconto">R$ 0,00</dd></div>
+          <div class="doc-total"><dt>Total</dt><dd id="doc-total">R$ 0,00</dd></div>
+        </dl>
+
+        <section id="doc-bloco-obs" class="doc-obs">
+          <h4>Observações</h4>
+          <p id="doc-obs"></p>
+        </section>
+
+        <div class="doc-assinaturas">
+          <div><span>Assinatura do prestador</span></div>
+          <div><span>Assinatura do cliente</span></div>
+        </div>
+      </article>
+    </aside>
+  </main>
+
+  <!-- ================= ORÇAMENTOS SALVOS ================= -->
+  <section class="salvos no-print">
+    <h2>Documentos salvos</h2>
+    <div class="grade grade-2 filtros">
+      <label>Buscar por número ou cliente
+        <input type="text" id="filtro-busca" placeholder="Ex.: ORC-2026 ou Maria">
+      </label>
+      <label>Filtrar por status
+        <select id="filtro-status">
+          <option value="todos">Todos</option>
+          <option value="pendente">Pendente</option>
+          <option value="aprovado">Aprovado</option>
+          <option value="recusado">Recusado</option>
+        </select>
+      </label>
+    </div>
+    <p id="contagem-salvos" class="texto-suave"></p>
+    <ul id="lista-salvos" class="lista-salvos"></ul>
+  </section>
+
+  <script src="script.js"></script>
+</body>
+</html>
